@@ -19,6 +19,21 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Message received:', request);
   
+  if (request.action === 'getCurrentTabUrl') {
+    // Get current active tab URL
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs && tabs.length > 0) {
+        const url = tabs[0].url;
+        console.log('Current tab URL from background:', url);
+        sendResponse({ url: url });
+      } else {
+        console.log('No active tab found');
+        sendResponse({ url: null });
+      }
+    });
+    return true; // Keep message channel open for async response
+  }
+  
   if (request.action === 'captureScreenshot') {
     // Handle screenshot capture
     sendResponse({ success: true, message: 'Screenshot captured' });
