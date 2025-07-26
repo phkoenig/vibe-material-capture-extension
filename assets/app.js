@@ -80,8 +80,21 @@ class SupabaseQueryBuilder {
       throw new Error(`Supabase Error: ${response.status} ${response.statusText} - ${error}`);
     }
 
-    const result = await response.json();
-    return { data: result, error: null };
+    // Check for content before parsing JSON
+    const contentLength = response.headers.get('content-length');
+    if (!contentLength || parseInt(contentLength, 10) === 0) {
+      return { data: null, error: null };
+    }
+
+    // Only parse JSON if there is content
+    try {
+      const result = await response.json();
+      return { data: result, error: null };
+    } catch (e) {
+      console.error('Failed to parse JSON response:', e);
+      // Return success with null data if parsing fails but request was ok
+      return { data: null, error: null };
+    }
   }
 }
 
@@ -555,6 +568,26 @@ function updateButtonStates() {
   elements.saveBtn.disabled = !state.screenshotUrl;
 }
 
+// Reset UI to initial state after saving
+function resetUI() {
+  // Clear images
+  elements.screenshotImg.innerHTML = '';
+  elements.thumbnailImg.innerHTML = '';
+  
+  // Restore placeholder heights
+  elements.screenshotImg.style.height = '200px';
+  elements.thumbnailImg.style.height = '200px';
+
+  // Clear state
+  state.screenshotUrl = '';
+  state.thumbnailUrl = '';
+  
+  // Reset button states
+  updateButtonStates();
+  
+  console.log('UI has been reset to initial state.');
+}
+
 async function handleScreenshot() {
   setLoading(true, 'screenshot');
   
@@ -610,6 +643,8 @@ async function handleSave() {
       console.log('Capture saved successfully:', result.data);
       state.dbStatus = "Connected";
       alert("Capture erfolgreich gespeichert!");
+      // Reset the UI for the next capture
+      resetUI();
     }
   } catch (err) {
     console.error('Save error:', err);
