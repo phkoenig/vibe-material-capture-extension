@@ -120,7 +120,14 @@ const elements = {
 // Chrome API Functions
 async function getCurrentTabUrl() {
   try {
-    // Get the current active tab URL
+    // Try to get URL from background script first
+    const response = await chrome.runtime.sendMessage({ action: 'getCurrentTabUrl' });
+    if (response && response.url) {
+      console.log('URL from background script:', response.url);
+      return response.url;
+    }
+    
+    // Fallback: Get the current active tab URL directly
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     console.log('Found tabs:', tabs);
     
@@ -174,42 +181,270 @@ async function captureTabScreenshot() {
 }
 
 async function captureThumbnail() {
+  if (!state.screenshotUrl) {
+    alert("Bitte zuerst einen Screenshot machen!");
+    return;
+  }
+  
+  setLoading(true, 'thumbnail');
+  
   try {
-    // Get current active tab
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tabs || tabs.length === 0) {
       throw new Error('No active tab found');
     }
-
+    
     const tab = tabs[0];
-    console.log('Capturing thumbnail for tab:', tab.url);
     
-    // For thumbnail, we'll use the same screenshot but with lower quality
-    const screenshot = await captureTabScreenshot();
+    // Inject the script to perform area selection on the target page.
+    const finalArea = await injectAreaSelection(tab.id);
     
-    // Convert to lower quality (this is a simplified approach)
-    // In a real implementation, you might want to resize the image
-    return screenshot;
+    if (finalArea) {
+      // The coordinates are already scaled, so we can use them directly.
+      const thumbnailUrl = await createThumbnailFromArea(state.screenshotUrl, finalArea);
+      state.thumbnailUrl = thumbnailUrl;
+      
+      const thumbnailContainer = elements.thumbnailImg;
+      thumbnailContainer.innerHTML = `<img src="${thumbnailUrl}" alt="Thumbnail" class="image">`;
+      thumbnailContainer.style.height = 'auto';
+      thumbnailContainer.style.minHeight = '0';
+      
+      console.log('Thumbnail created from final scaled area:', finalArea);
+    } else {
+      console.log('Area selection cancelled');
+    }
   } catch (error) {
-    console.log('Error capturing thumbnail:', error);
-    throw error;
+    console.error('Thumbnail creation failed:', error);
+    alert('Thumbnail-Erstellung fehlgeschlagen: ' + error.message);
   }
+  
+  setLoading(false, 'thumbnail');
+}
+
+// Inject area selection into the target page
+async function injectAreaSelection(tabId) {
+  return new Promise((resolve) => {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      function: performAreaSelection
+    }, (results) => {
+      if (chrome.runtime.lastError) {
+        console.error('Script injection error:', chrome.runtime.lastError);
+        resolve(null);
+        return;
+      }
+      
+      if (results && results[0] && results[0].result) {
+        resolve(results[0].result);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+// This function will be injected into the target page to perform selection
+// and calculate the final coordinates.
+function performAreaSelection() {
+  return new Promise((resolve) => {
+    // We must calculate coordinates within the context of the target page
+    // to get access to the correct devicePixelRatio and viewport dimensions.
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+    overlay.style.zIndex = '999999';
+    overlay.style.cursor = 'crosshair';
+    overlay.style.pointerEvents = 'auto';
+    
+    // Add instruction text
+    const instruction = document.createElement('div');
+    instruction.style.position = 'fixed';
+    instruction.style.top = '20px';
+    instruction.style.left = '50%';
+    instruction.style.transform = 'translateX(-50%)';
+    instruction.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    instruction.style.color = 'white';
+    instruction.style.padding = '12px 20px';
+    instruction.style.borderRadius = '6px';
+    instruction.style.fontSize = '14px';
+    instruction.style.fontFamily = 'Arial, sans-serif';
+    instruction.style.zIndex = '1000000';
+    instruction.textContent = 'Ziehen Sie einen Rahmen um den gewünschten Bereich. Drücken Sie ESC zum Abbrechen.';
+    
+    overlay.appendChild(instruction);
+    document.body.appendChild(overlay);
+    
+    let selectionBox = null;
+    let startX, startY;
+
+    function handleMouseDown(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      startX = e.clientX;
+      startY = e.clientY;
+
+      selectionBox = document.createElement('div');
+      selectionBox.style.position = 'absolute';
+      selectionBox.style.border = '2px solid #db2777';
+      selectionBox.style.backgroundColor = 'rgba(219, 39, 119, 0.1)';
+      selectionBox.style.zIndex = '1000001';
+      selectionBox.style.left = startX + 'px';
+      selectionBox.style.top = startY + 'px';
+      overlay.appendChild(selectionBox);
+
+      overlay.addEventListener('mousemove', handleMouseMove);
+      overlay.addEventListener('mouseup', handleMouseUp);
+    }
+
+    function handleMouseMove(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+      const left = Math.min(currentX, startX);
+      const top = Math.min(currentY, startY);
+
+      selectionBox.style.width = width + 'px';
+      selectionBox.style.height = height + 'px';
+      selectionBox.style.left = left + 'px';
+      selectionBox.style.top = top + 'px';
+    }
+
+    function handleMouseUp(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      cleanup();
+
+      const endX = e.clientX;
+      const endY = e.clientY;
+
+      const width = Math.abs(endX - startX);
+      const height = Math.abs(endY - startY);
+
+      if (width > 10 && height > 10) {
+        const finalRect = {
+          left: Math.round(Math.min(startX, endX) * devicePixelRatio),
+          top: Math.round(Math.min(startY, endY) * devicePixelRatio),
+          width: Math.round(width * devicePixelRatio),
+          height: Math.round(height * devicePixelRatio)
+        };
+        resolve(finalRect);
+      } else {
+        resolve(null);
+      }
+    }
+    
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        cleanup();
+        resolve(null);
+      }
+    }
+    
+    function cleanup() {
+      document.removeEventListener('keydown', handleKeyDown);
+      overlay.removeEventListener('mousedown', handleMouseDown);
+      overlay.removeEventListener('mousemove', handleMouseMove);
+      overlay.removeEventListener('mouseup', handleMouseUp);
+      document.body.removeChild(overlay);
+    }
+
+    overlay.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+  });
+}
+
+async function createThumbnailFromArea(imageUrl, area) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = function() {
+      console.log('Image loaded, dimensions:', img.width, 'x', img.height);
+      console.log('Cropping area:', area);
+      
+      // Validate area coordinates
+      if (area.left < 0 || area.top < 0 || 
+          area.left + area.width > img.width || 
+          area.top + area.height > img.height) {
+        console.warn('Area coordinates out of bounds, clamping...');
+        area.left = Math.max(0, Math.min(area.left, img.width - area.width));
+        area.top = Math.max(0, Math.min(area.top, img.height - area.height));
+        area.width = Math.min(area.width, img.width - area.left);
+        area.height = Math.min(area.height, img.height - area.top);
+        console.log('Clamped area:', area);
+      }
+      
+      // Create canvas for cropping
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas size to selected area
+      canvas.width = area.width;
+      canvas.height = area.height;
+      
+      console.log('Canvas size:', canvas.width, 'x', canvas.height);
+      
+      // Draw cropped portion
+      ctx.drawImage(
+        img,
+        area.left, area.top, area.width, area.height,  // Source rectangle
+        0, 0, area.width, area.height                   // Destination rectangle
+      );
+      
+      // Convert to data URL
+      const thumbnailUrl = canvas.toDataURL('image/png');
+      console.log('Thumbnail created successfully');
+      resolve(thumbnailUrl);
+    };
+    
+    img.onerror = function() {
+      console.error('Failed to load image for cropping');
+      reject(new Error('Failed to load image for cropping'));
+    };
+    
+    img.src = imageUrl;
+  });
 }
 
 function init() {
+  console.log('Initializing Chrome Extension...');
+  
+  // Set current date/time
   state.currentDateTime = new Date().toLocaleString('de-DE');
-  
-  // Get current tab URL and update UI
-  updateCurrentUrl();
-  
   elements.datetimeInput.value = state.currentDateTime;
+  console.log('Date/time set:', state.currentDateTime);
+  
+  // Set initial status
   elements.statusInput.value = state.dbStatus;
   
   // Set initial button states
   updateButtonStates();
   
+  // Update status indicator
   updateStatusIndicator();
+  
+  // Test Supabase connection
   testSupabaseConnection();
+  
+  // Get current tab URL and update UI
+  setTimeout(() => {
+    updateCurrentUrl();
+  }, 500); // Small delay to ensure everything is loaded
+  
+  console.log('Initialization complete');
 }
 
 async function updateCurrentUrl() {
@@ -347,36 +582,6 @@ async function handleScreenshot() {
   setLoading(false, 'screenshot');
 }
 
-async function handleThumbnail() {
-  if (!state.screenshotUrl) {
-    alert("Bitte zuerst einen Screenshot machen!");
-    return;
-  }
-  
-  setLoading(true, 'thumbnail');
-  
-  try {
-    // Create thumbnail from screenshot
-    const thumbnailUrl = await createThumbnail(state.screenshotUrl);
-    state.thumbnailUrl = thumbnailUrl;
-    
-    // Replace placeholder with actual thumbnail
-    const thumbnailContainer = elements.thumbnailImg;
-    thumbnailContainer.innerHTML = `<img src="${thumbnailUrl}" alt="Thumbnail" class="image">`;
-    
-    // Remove fixed height to let image determine container size
-    thumbnailContainer.style.height = 'auto';
-    thumbnailContainer.style.minHeight = '0';
-    
-    console.log('Thumbnail created successfully');
-  } catch (error) {
-    console.error('Thumbnail creation failed:', error);
-    alert('Thumbnail-Erstellung fehlgeschlagen: ' + error.message);
-  }
-  
-  setLoading(false, 'thumbnail');
-}
-
 async function handleSave() {
   if (!state.screenshotUrl) {
     alert("Bitte zuerst einen Screenshot aufnehmen!");
@@ -423,7 +628,7 @@ function handleStatusChange(e) { state.dbStatus = e.target.value; updateStatusIn
 
 // Event Listeners
 elements.screenshotBtn.addEventListener('click', handleScreenshot);
-elements.thumbnailBtn.addEventListener('click', handleThumbnail);
+elements.thumbnailBtn.addEventListener('click', captureThumbnail);
 elements.saveBtn.addEventListener('click', handleSave);
 elements.urlInput.addEventListener('input', handleUrlChange);
 elements.datetimeInput.addEventListener('input', handleDateTimeChange);
