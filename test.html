@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subframe Test - Deine Farben</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Deine echten Subframe Design Tokens */
+        :root {
+            /* Brand Colors (Pink/Fuchsia) */
+            --brand-50: rgb(253, 242, 248);
+            --brand-100: rgb(252, 231, 243);
+            --brand-200: rgb(251, 207, 232);
+            --brand-300: rgb(249, 168, 212);
+            --brand-400: rgb(244, 114, 182);
+            --brand-500: rgb(236, 72, 153);
+            --brand-600: rgb(219, 39, 119);
+            --brand-700: rgb(190, 24, 93);
+            --brand-800: rgb(157, 23, 77);
+            --brand-900: rgb(131, 24, 67);
+            
+            /* Neutral Colors */
+            --neutral-0: rgb(255, 255, 255);
+            --neutral-50: rgb(250, 250, 250);
+            --neutral-100: rgb(245, 245, 245);
+            --neutral-200: rgb(229, 229, 229);
+            --neutral-300: rgb(212, 212, 212);
+            --neutral-400: rgb(163, 163, 163);
+            --neutral-500: rgb(115, 115, 115);
+            --neutral-600: rgb(82, 82, 82);
+            --neutral-700: rgb(64, 64, 64);
+            --neutral-800: rgb(38, 38, 38);
+            --neutral-900: rgb(23, 23, 23);
+            --neutral-950: rgb(10, 10, 10);
+            
+            /* Error Colors (Purple) */
+            --error-50: rgb(253, 244, 255);
+            --error-100: rgb(250, 232, 255);
+            --error-200: rgb(245, 208, 254);
+            --error-300: rgb(240, 171, 252);
+            --error-400: rgb(232, 121, 249);
+            --error-500: rgb(217, 70, 239);
+            --error-600: rgb(192, 38, 211);
+            --error-700: rgb(162, 28, 175);
+            --error-800: rgb(134, 25, 143);
+            --error-900: rgb(112, 26, 117);
+            
+            /* Special Colors */
+            --brand-primary: rgb(219, 39, 119);
+            --default-font: rgb(23, 23, 23);
+            --subtext-color: rgb(115, 115, 115);
+            --neutral-border: rgb(229, 229, 229);
+            --default-background: rgb(255, 255, 255);
+        }
+        
+        .btn-primary {
+            background-color: var(--brand-600);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: Inter, sans-serif;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--brand-500);
+        }
+        
+        .btn-primary:active {
+            background-color: var(--brand-600);
+        }
+        
+        .btn-secondary {
+            background-color: var(--brand-50);
+            color: var(--brand-700);
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: Inter, sans-serif;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--brand-100);
+        }
+        
+        .btn-secondary:active {
+            background-color: var(--brand-50);
+        }
+        
+        .btn-neutral {
+            background-color: var(--neutral-100);
+            color: var(--neutral-700);
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: Inter, sans-serif;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-neutral:hover {
+            background-color: var(--neutral-200);
+        }
+        
+        .btn-neutral:active {
+            background-color: var(--neutral-100);
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--neutral-border);
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: Inter, sans-serif;
+            background-color: var(--default-background);
+            color: var(--default-font);
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--brand-500);
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+        }
+        
+        .input-field::placeholder {
+            color: var(--subtext-color);
+        }
+        
+        .label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--default-font);
+            margin-bottom: 4px;
+            font-family: Inter, sans-serif;
+        }
+        
+        body {
+            font-family: Inter, sans-serif;
+            background-color: var(--default-background);
+            color: var(--default-font);
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold mb-4" style="color: var(--default-font);">Deine Subframe-Komponenten</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="label">Test Input</label>
+                <input type="text" class="input-field" placeholder="Enter something..." id="testInput">
+            </div>
+            
+            <div class="space-x-2">
+                <button class="btn-primary">Primary Button</button>
+                <button class="btn-secondary">Secondary Button</button>
+                <button class="btn-neutral">Neutral Button</button>
+            </div>
+            
+            <div class="mt-4 p-4 rounded" style="background-color: var(--neutral-100);">
+                <p class="text-sm" style="color: var(--subtext-color);">Input value: <span id="inputValue"></span></p>
+            </div>
+            
+            <div class="mt-4 p-4 rounded border" style="background-color: var(--default-background); border-color: var(--neutral-border);">
+                <h3 class="font-semibold mb-2" style="color: var(--default-font);">Deine Farben:</h3>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div class="p-2 rounded" style="background-color: var(--brand-600); color: white;">Brand 600</div>
+                    <div class="p-2 rounded" style="background-color: var(--brand-500); color: white;">Brand 500</div>
+                    <div class="p-2 rounded" style="background-color: var(--brand-400); color: white;">Brand 400</div>
+                    <div class="p-2 rounded" style="background-color: var(--brand-50); color: var(--brand-700);">Brand 50</div>
+                    <div class="p-2 rounded" style="background-color: var(--brand-100); color: var(--brand-700);">Brand 100</div>
+                    <div class="p-2 rounded" style="background-color: var(--error-600); color: white;">Error 600</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const input = document.getElementById('testInput');
+        const valueSpan = document.getElementById('inputValue');
+        
+        input.addEventListener('input', (e) => {
+            valueSpan.textContent = e.target.value;
+        });
+    </script>
+</body>
+</html> 

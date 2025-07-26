@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VIBE Material Capture Tool</title>
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <div class="main-content">
+      <div class="button-group">
+        <button id="screenshotBtn" class="button">
+          <span id="screenshotSpinner" class="loading" style="display: none;">⏳</span>
+          Screenshot
+        </button>
+        <button id="thumbnailBtn" class="button" disabled>
+          <span id="thumbnailSpinner" class="loading" style="display: none;">⏳</span>
+          Thumbnail
+        </button>
+        <button id="saveBtn" class="button" disabled>
+          <span id="saveSpinner" class="loading" style="display: none;">⏳</span>
+          Save
+        </button>
+      </div>
+      
+      <div class="image-container">
+        <span class="label">Screenshot</span>
+        <div id="screenshotImg" class="image-placeholder"></div>
+      </div>
+      
+      <div class="image-container">
+        <span class="label">Thumbnail</span>
+        <div id="thumbnailImg" class="image-placeholder"></div>
+      </div>
+      
+      <div class="form-section">
+        <div class="url-row">
+          <span class="label">URL</span>
+          <button id="refreshUrlBtn" class="refresh-button" title="URL aktualisieren">🔄</button>
+        </div>
+        <div class="text-field">
+          <input id="urlInput" type="text" class="text-input" value="">
+        </div>
+      </div>
+      
+      <div class="form-section">
+        <span class="label">Date / Time</span>
+        <div class="text-field">
+          <input id="datetimeInput" type="text" class="text-input" value="">
+        </div>
+      </div>
+      
+      <div class="form-section">
+        <div class="status-row">
+          <span class="label">DB-Connection-Status</span>
+          <div id="statusIndicator" class="status-indicator status-disconnected"></div>
+        </div>
+        <div class="text-field">
+          <input id="statusInput" type="text" class="text-input" value="Disconnected">
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/app.js"></script>
+  </body>
+</html> 

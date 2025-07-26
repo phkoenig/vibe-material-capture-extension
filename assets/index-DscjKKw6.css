@@ -1,0 +1,351 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Subframe Design Tokens */
+:root {
+  /* Brand Colors (Pink/Fuchsia) */
+  --brand-50: rgb(253, 242, 248);
+  --brand-100: rgb(252, 231, 243);
+  --brand-200: rgb(251, 207, 232);
+  --brand-300: rgb(249, 168, 212);
+  --brand-400: rgb(244, 114, 182);
+  --brand-500: rgb(236, 72, 153);
+  --brand-600: rgb(219, 39, 119);
+  --brand-700: rgb(190, 24, 93);
+  --brand-800: rgb(157, 23, 77);
+  --brand-900: rgb(131, 24, 67);
+  
+  /* Neutral Colors */
+  --neutral-0: rgb(255, 255, 255);
+  --neutral-50: rgb(250, 250, 250);
+  --neutral-100: rgb(245, 245, 245);
+  --neutral-200: rgb(229, 229, 229);
+  --neutral-300: rgb(212, 212, 212);
+  --neutral-400: rgb(163, 163, 163);
+  --neutral-500: rgb(115, 115, 115);
+  --neutral-600: rgb(82, 82, 82);
+  --neutral-700: rgb(64, 64, 64);
+  --neutral-800: rgb(38, 38, 38);
+  --neutral-900: rgb(23, 23, 23);
+  --neutral-950: rgb(10, 10, 10);
+  
+  /* Error Colors (Purple) */
+  --error-50: rgb(253, 244, 255);
+  --error-100: rgb(250, 232, 255);
+  --error-200: rgb(245, 208, 254);
+  --error-300: rgb(240, 171, 252);
+  --error-400: rgb(232, 121, 249);
+  --error-500: rgb(217, 70, 239);
+  --error-600: rgb(192, 38, 211);
+  --error-700: rgb(162, 28, 175);
+  --error-800: rgb(134, 25, 143);
+  --error-900: rgb(112, 26, 117);
+  
+  /* Success Colors */
+  --success-400: rgb(34, 211, 238);
+  --success-500: rgb(6, 182, 212);
+  --success-600: rgb(8, 145, 178);
+  
+  /* Special Colors */
+  --brand-primary: rgb(219, 39, 119);
+  --default-font: rgb(23, 23, 23);
+  --subtext-color: rgb(115, 115, 115);
+  --neutral-border: rgb(229, 229, 229);
+  --default-background: rgb(255, 255, 255);
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--default-background);
+  color: var(--default-font);
+}
+
+/* Subframe Component Styles */
+.text-caption {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  letter-spacing: 0em;
+}
+
+.text-caption-bold {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0em;
+}
+
+.text-body {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0em;
+}
+
+.text-body-bold {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0em;
+}
+
+.text-heading-3 {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0em;
+}
+
+.text-heading-2 {
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0em;
+}
+
+.text-title {
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.text-default-font {
+  color: var(--default-font);
+}
+
+.text-subtext-color {
+  color: var(--subtext-color);
+}
+
+/* Button Styles */
+.btn-primary {
+  background-color: var(--brand-600);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: Inter, sans-serif;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+}
+
+.btn-primary:hover {
+  background-color: var(--brand-500);
+}
+
+.btn-primary:active {
+  background-color: var(--brand-600);
+}
+
+.btn-primary:disabled {
+  background-color: var(--neutral-200);
+  cursor: default;
+}
+
+/* TextField Styles */
+.textfield {
+  width: 100%;
+  position: relative;
+}
+
+.textfield-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--neutral-border);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: Inter, sans-serif;
+  background-color: var(--default-background);
+  color: var(--default-font);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.textfield-input:focus {
+  outline: none;
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.textfield-input::placeholder {
+  color: var(--subtext-color);
+}
+
+/* Layout Styles */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-1 {
+  gap: 4px;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.gap-4 {
+  gap: 16px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.w-112 {
+  width: 28rem;
+}
+
+.h-8 {
+  height: 32px;
+}
+
+.h-2 {
+  height: 8px;
+}
+
+.w-2 {
+  width: 8px;
+}
+
+.px-4 {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.py-4 {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.pt-4 {
+  padding-top: 16px;
+}
+
+.rounded-md {
+  border-radius: 4px;
+}
+
+.rounded-full {
+  border-radius: 9999px;
+}
+
+.border {
+  border: 1px solid var(--neutral-border);
+}
+
+.border-solid {
+  border-style: solid;
+}
+
+.border-neutral-border {
+  border-color: var(--neutral-border);
+}
+
+.shadow-md {
+  box-shadow: 0px 4px 16px -2px rgba(0, 0, 0, 0.08), 0px 2px 4px -1px rgba(0, 0, 0, 0.08);
+}
+
+.bg-default-background {
+  background-color: var(--default-background);
+}
+
+.bg-brand-600 {
+  background-color: var(--brand-600);
+}
+
+.bg-brand-500 {
+  background-color: var(--brand-500);
+}
+
+.bg-neutral-200 {
+  background-color: var(--neutral-200);
+}
+
+.bg-neutral-400 {
+  background-color: var(--neutral-400);
+}
+
+.bg-success-400 {
+  background-color: var(--success-400);
+}
+
+.bg-error-400 {
+  background-color: var(--error-400);
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.shrink-0 {
+  flex-shrink: 0;
+}
+
+.basis-0 {
+  flex-basis: 0;
+}
+
+.self-stretch {
+  align-self: stretch;
+}
+
+.flex-none {
+  flex: none;
+}
+
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+
+/* Status Indicator */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-connected {
+  background-color: var(--success-400);
+}
+
+.status-error {
+  background-color: var(--error-400);
+}
+
+.status-disconnected {
+  background-color: var(--neutral-400);
+} 

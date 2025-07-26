@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VIBE Material Capture</title>
+    <style>
+      body {
+        width: 300px;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+      }
+      .title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .description {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 15px;
+      }
+      .button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+      }
+      .button:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="title">VIBE Material Capture Tool</div>
+    <div class="description">Click the button to open the side panel and start capturing materials.</div>
+    <button class="button" id="openSidePanel">Open Side Panel</button>
+    
+    <script>
+      document.getElementById('openSidePanel').addEventListener('click', () => {
+        chrome.sidePanel.open();
+        window.close();
+      });
+    </script>
+  </body>
+</html> 

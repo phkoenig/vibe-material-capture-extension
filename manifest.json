@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "VIBE Material Capture Tool",
+  "version": "1.0.0",
+  "description": "Capture web pages and materials for VIBE project",
+  "icons": {
+    "16": "icons/icon16.png"
+  },
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "sidePanel"
+  ],
+  
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["assets/content.js"]
+    }
+  ],
+  
+  "side_panel": {
+    "default_path": "ChromeSidebar.html"
+  },
+  
+  "action": {
+    "default_title": "VIBE Material Capture",
+    "default_icon": "icons/icon16.png"
+  },
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+} 
