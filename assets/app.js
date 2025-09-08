@@ -7,7 +7,7 @@ class SupabaseClient {
       'apikey': key,
       'Authorization': `Bearer ${key}`,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Prefer': 'return=representation'
     };
   }
 
@@ -36,6 +36,8 @@ class SupabaseQueryBuilder {
     this.headers = headers;
     this.table = table;
     this.query = '';
+    this.method = 'GET';
+    this.data = null;
   }
 
   select(columns = '*') {
@@ -44,21 +46,43 @@ class SupabaseQueryBuilder {
   }
 
   insert(data) {
-    return this._execute('POST', data);
+    this.method = 'POST';
+    this.data = data;
+    return this;
   }
 
   update(data) {
-    return this._execute('PATCH', data);
+    this.method = 'PATCH';
+    this.data = data;
+    return this;
   }
 
   delete() {
-    return this._execute('DELETE');
+    this.method = 'DELETE';
+    return this;
   }
 
   eq(column, value) {
     this.query += this.query ? '&' : '';
     this.query += `${column}=eq.${encodeURIComponent(value)}`;
     return this;
+  }
+
+  order(column, options = {}) {
+    const direction = options.ascending !== false ? 'asc' : 'desc';
+    this.query += this.query ? '&' : '';
+    this.query += `order=${column}.${direction}`;
+    return this;
+  }
+
+  limit(count) {
+    this.query += this.query ? '&' : '';
+    this.query += `limit=${count}`;
+    return this;
+  }
+
+  async execute() {
+    return this._execute(this.method, this.data);
   }
 
   async _execute(method, data = null) {
@@ -73,22 +97,47 @@ class SupabaseQueryBuilder {
       options.body = JSON.stringify(data);
     }
 
+    console.log('Supabase request:', {
+      url: url,
+      method: method,
+      headers: this.headers,
+      body: data ? JSON.stringify(data) : null
+    });
+
     const response = await fetch(url, options);
+    
+    console.log('Supabase response status:', response.status);
+    console.log('Supabase response headers:', Object.fromEntries(response.headers.entries()));
     
     if (!response.ok) {
       const error = await response.text();
+      console.error('Supabase error response:', error);
       throw new Error(`Supabase Error: ${response.status} ${response.statusText} - ${error}`);
     }
 
-    // Check for content before parsing JSON
+    // For INSERT operations with .select(), we should get data back
+    if (method === 'POST' && this.query.includes('select=')) {
+      try {
+        const result = await response.json();
+        console.log('Supabase INSERT with SELECT result:', result);
+        return { data: result, error: null };
+      } catch (e) {
+        console.error('Failed to parse JSON response for INSERT with SELECT:', e);
+        return { data: null, error: e };
+      }
+    }
+
+    // For other operations, check if there's content
     const contentLength = response.headers.get('content-length');
     if (!contentLength || parseInt(contentLength, 10) === 0) {
+      console.log('Supabase response has no content');
       return { data: null, error: null };
     }
 
     // Only parse JSON if there is content
     try {
       const result = await response.json();
+      console.log('Supabase response data:', result);
       return { data: result, error: null };
     } catch (e) {
       console.error('Failed to parse JSON response:', e);
@@ -99,8 +148,8 @@ class SupabaseQueryBuilder {
 }
 
 // Initialize Supabase Client
-const SUPABASE_URL = 'https://jpmhwyjiuodsvjowddsm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwbWh3eWppdW9kc3Zqb3dkZHNtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODYyNjQ0NCwiZXhwIjoyMDY0MjAyNDQ0fQ.U2nrk0Ih7xnPQJ-wtMLS3Tgr0WTNI77LeOFkzhkWwXc';
+const SUPABASE_URL = CONFIG.SUPABASE_URL;
+const SUPABASE_ANON_KEY = CONFIG.SUPABASE_ANON_KEY;
 
 const supabase = new SupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -457,6 +506,11 @@ function init() {
     updateCurrentUrl();
   }, 500); // Small delay to ensure everything is loaded
   
+  // Add test button for debugging
+  setTimeout(() => {
+    addTestButton();
+  }, 1000);
+  
   console.log('Initialization complete');
 }
 
@@ -494,7 +548,7 @@ function refreshUrl() {
 async function testSupabaseConnection() {
   try {
     // Test connection by trying to get a simple query
-    const result = await supabase.from('captures').select('id');
+    const result = await supabase.from('captures').select('id').execute();
     if (result.error) {
       console.log('Supabase connection test failed:', result.error);
       state.dbStatus = "Error";
@@ -624,6 +678,9 @@ async function handleSave() {
   setLoading(true, 'save');
   
   try {
+    console.log('=== STARTING SAVE PROCESS ===');
+    console.log('Current state:', state);
+    
     // Save to Supabase
     const captureData = {
       url: state.currentUrl,
@@ -633,19 +690,124 @@ async function handleSave() {
       created_at: new Date().toISOString()
     };
 
-    const result = await supabase.from('captures').insert(captureData);
+    console.log('Capture data to save:', captureData);
+
+    // First, insert the data with explicit select to get the inserted data back
+    console.log('Attempting Supabase insert with select...');
+    const insertResult = await supabase.from('captures').insert(captureData).select('id').execute();
     
-    if (result.error) {
-      console.error('Supabase save error:', result.error);
+    console.log('Supabase insert result:', insertResult);
+    
+    if (insertResult.error) {
+      console.error('Supabase save error:', insertResult.error);
       state.dbStatus = "Error";
-      alert("Fehler beim Speichern: " + result.error.message);
-    } else {
-      console.log('Capture saved successfully:', result.data);
-      state.dbStatus = "Connected";
-      alert("Capture erfolgreich gespeichert!");
-      // Reset the UI for the next capture
-      resetUI();
+      alert("Fehler beim Speichern: " + insertResult.error.message);
+      return;
     }
+    
+    console.log('Capture saved successfully:', insertResult.data);
+    state.dbStatus = "Connected";
+    
+    // Extract capture_id from the insert result
+    let captureId = null;
+    
+    if (insertResult.data && Array.isArray(insertResult.data) && insertResult.data.length > 0) {
+      captureId = insertResult.data[0].id;
+      console.log('Found capture ID from insert result:', captureId);
+    } else if (insertResult.data && insertResult.data.id) {
+      captureId = insertResult.data.id;
+      console.log('Found capture ID from insert result object:', captureId);
+    } else {
+      console.log('No capture ID found in insert result');
+    }
+    
+    if (captureId) {
+      console.log('=== CAPTURE ID EXTRACTED SUCCESSFULLY ===');
+      console.log('Capture ID:', captureId);
+      
+      // Debug: Check if CONFIG is loaded
+      console.log('CONFIG object:', CONFIG);
+      console.log('CONFIG.NEXTJS_APP_URL:', CONFIG.NEXTJS_APP_URL);
+      console.log('CONFIG.NEXTJS_CAPTURE_ROUTE:', CONFIG.NEXTJS_CAPTURE_ROUTE);
+      
+      // Open Next.js App with capture_id parameter
+      const nextJsUrl = `${CONFIG.NEXTJS_APP_URL}${CONFIG.NEXTJS_CAPTURE_ROUTE}?capture_id=${captureId}`;
+      console.log('Next.js URL to open:', nextJsUrl);
+      
+      // Test if chrome.tabs API is available
+      console.log('chrome.tabs available:', typeof chrome !== 'undefined' && chrome.tabs);
+      console.log('chrome.tabs.create available:', typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create);
+      
+      // Try multiple methods to open the new tab
+      let tabOpened = false;
+      
+      // Method 1: Try chrome.tabs.create directly
+      try {
+        console.log('Method 1: Trying chrome.tabs.create directly...');
+        if (chrome.tabs && chrome.tabs.create) {
+          const newTab = await chrome.tabs.create({ url: nextJsUrl });
+          console.log('Method 1 successful - Next.js App opened in tab:', newTab);
+          tabOpened = true;
+        } else {
+          console.log('chrome.tabs API not available');
+        }
+      } catch (error) {
+        console.error('Method 1 failed:', error);
+      }
+      
+      // Method 2: Try background script message
+      if (!tabOpened) {
+        try {
+          console.log('Method 2: Trying background script message...');
+          const response = await chrome.runtime.sendMessage({
+            action: 'openNewTab',
+            url: nextJsUrl
+          });
+          
+          console.log('Background script response:', response);
+          
+          if (response && response.success) {
+            console.log('Method 2 successful - Next.js App opened in tab:', response.tab);
+            tabOpened = true;
+          } else {
+            console.error('Method 2 failed:', response ? response.error : 'No response');
+          }
+        } catch (messageError) {
+          console.error('Method 2 failed:', messageError);
+        }
+      }
+      
+      // Method 3: Try window.open as fallback
+      if (!tabOpened) {
+        try {
+          console.log('Method 3: Trying window.open as fallback...');
+          const newWindow = window.open(nextJsUrl, '_blank');
+          if (newWindow) {
+            console.log('Method 3 successful - Next.js App opened in new window');
+            tabOpened = true;
+          } else {
+            console.error('Method 3 failed - window.open returned null');
+          }
+        } catch (windowError) {
+          console.error('Method 3 failed:', windowError);
+        }
+      }
+      
+      // If all methods failed, show manual instructions
+      if (!tabOpened) {
+        console.error('All methods to open new tab failed');
+        alert(`Alle Methoden zum Öffnen der Next.js App sind fehlgeschlagen.\n\nÖffne manuell: ${nextJsUrl}`);
+      } else {
+        console.log('=== TAB OPENED SUCCESSFULLY ===');
+      }
+    } else {
+      console.warn('No capture_id found in response');
+      console.log('Full insertResult.data:', insertResult.data);
+      alert('Fehler: Keine capture_id gefunden. Bitte überprüfe die Console für Details.');
+    }
+    
+    // Reset the UI for the next capture
+    resetUI();
   } catch (err) {
     console.error('Save error:', err);
     state.dbStatus = "Error";
@@ -705,3 +867,63 @@ window.addEventListener('DOMContentLoaded', () => {
 init();
 
 console.log('Chrome Extension mit Supabase-Integration geladen!'); 
+
+// Test function to verify chrome.tabs.create works
+async function testTabCreation() {
+  console.log('=== TESTING TAB CREATION ===');
+  
+  try {
+    // Test 1: Check if chrome.tabs is available
+    console.log('chrome.tabs available:', typeof chrome !== 'undefined' && chrome.tabs);
+    console.log('chrome.tabs.create available:', typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create);
+    
+    if (!chrome.tabs || !chrome.tabs.create) {
+      console.error('chrome.tabs.create is not available');
+      alert('chrome.tabs.create ist nicht verfügbar');
+      return;
+    }
+    
+    // Test 2: Try to create a simple tab
+    console.log('Attempting to create test tab...');
+    const testTab = await chrome.tabs.create({ 
+      url: 'https://www.google.com',
+      active: false 
+    });
+    
+    console.log('Test tab created successfully:', testTab);
+    alert('Test-Tab erfolgreich erstellt! Tab ID: ' + testTab.id);
+    
+    // Close the test tab after 2 seconds
+    setTimeout(() => {
+      chrome.tabs.remove(testTab.id);
+      console.log('Test tab closed');
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Test tab creation failed:', error);
+    alert('Test-Tab-Erstellung fehlgeschlagen: ' + error.message);
+  }
+}
+
+// Add test button to UI
+function addTestButton() {
+  const testBtn = document.createElement('button');
+  testBtn.textContent = 'Test Tab Creation';
+  testBtn.style.cssText = `
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    margin: 10px 0;
+    cursor: pointer;
+    font-size: 12px;
+  `;
+  testBtn.addEventListener('click', testTabCreation);
+  
+  // Add to the UI (you can adjust the position)
+  const container = document.querySelector('.container');
+  if (container) {
+    container.appendChild(testBtn);
+  }
+} 

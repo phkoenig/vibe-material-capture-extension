@@ -39,5 +39,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true, message: 'Screenshot captured' });
   }
   
+  if (request.action === 'openNewTab') {
+    // Open a new tab with the specified URL
+    console.log('Opening new tab with URL:', request.url);
+    chrome.tabs.create({ url: request.url }, (newTab) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error creating tab:', chrome.runtime.lastError);
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+      } else {
+        console.log('New tab created successfully:', newTab);
+        sendResponse({ success: true, tab: newTab });
+      }
+    });
+    return true; // Keep message channel open for async response
+  }
+  
   return true; // Keep message channel open for async response
 }); 
